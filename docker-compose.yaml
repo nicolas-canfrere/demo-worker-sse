@@ -1,0 +1,95 @@
+networks:
+    archi_long_treatment:
+        driver: bridge
+
+services:
+    archi_long_treatment_api_server:
+        image: nginx:1.25.5-alpine
+        container_name: archi_long_treatment_api_server
+        volumes:
+            - ./infrastructure/nginx/archi_long_treatment_api_server/default.conf:/etc/nginx/conf.d/default.conf
+            - .:/app
+        ports:
+            - "8080:80"
+        networks:
+            - archi_long_treatment
+
+    archi_long_treatment_api_app:
+        image: php-long-treatment:latest
+        container_name: archi_long_treatment_api_app
+        environment:
+            - MESSENGER_TRANSPORT_DSN=amqp://guest:guest@archi_long_treatment_queue:5672/%2f/messages
+            - MAILER_DSN=smtp://archi_long_treatment_mailer:1025
+            - MERCURE_URL=http://archi_long_treatment_mercure:9999/.well-known/mercure
+            - MERCURE_PUBLIC_URL=http://localhost:9999/.well-known/mercure
+            - MERCURE_JWT_SECRET=SecretKeySecretKeySecretKeySecretKeySecretKeySecretKey
+        volumes:
+            - .:/app
+        networks:
+            - archi_long_treatment
+
+    archi_long_treatment_worker_app:
+        image: php-long-treatment:latest
+        container_name: archi_long_treatment_worker_app
+        restart: on-failure
+        volumes:
+            - .:/app
+        environment:
+            - MESSENGER_TRANSPORT_DSN=amqp://guest:guest@archi_long_treatment_queue:5672/%2f/messages
+            - MAILER_DSN=smtp://archi_long_treatment_mailer:1025
+            - MERCURE_URL=http://archi_long_treatment_mercure:9999/.well-known/mercure
+            - MERCURE_PUBLIC_URL=http://localhost:9999/.well-known/mercure
+            - MERCURE_JWT_SECRET=SecretKeySecretKeySecretKeySecretKeySecretKeySecretKey
+        networks:
+            - archi_long_treatment
+        command: php /app/bin/console messenger:consume async -vv
+        depends_on:
+            archi_long_treatment_queue:
+                condition: service_healthy
+
+    archi_long_treatment_queue:
+        image: rabbitmq:3.13.1-management-alpine
+        container_name: archi_long_treatment_queue
+        ports:
+            - "15672:15672"
+            - "5672:5672"
+        networks:
+            - archi_long_treatment
+        healthcheck:
+            test: rabbitmq-diagnostics -q ping
+            interval: 10s
+            timeout: 10s
+            retries: 3
+
+    archi_long_treatment_mercure:
+        image: dunglas/mercure
+        container_name: archi_long_treatment_mercure
+        environment:
+            # Uncomment the following line to disable HTTPS
+            SERVER_NAME: ':9999'
+            MERCURE_PUBLISHER_JWT_KEY: SecretKeySecretKeySecretKeySecretKeySecretKeySecretKey
+            # MERCURE_SUBSCRIBER_JWT_KEY: SecretKeySecretKeySecretKeySecretKeySecretKeySecretKey
+        # Uncomment the following line to enable the development mode
+        command: /usr/bin/caddy run --config /etc/caddy/Caddyfile.dev
+        ports:
+            - '9999:9999'
+        networks:
+            - archi_long_treatment
+        volumes:
+            - mercure_data:/data
+            - mercure_config:/config
+
+    archi_long_treatment_mailer:
+        image: axllent/mailpit
+        ports:
+            - "1025:1025"
+            - "8025:8025"
+        networks:
+            - archi_long_treatment
+        environment:
+            MP_SMTP_AUTH_ACCEPT_ANY: 1
+            MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+volumes:
+    mercure_data:
+    mercure_config:

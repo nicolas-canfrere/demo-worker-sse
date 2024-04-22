@@ -1,0 +1,23 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+actor           User            as user
+participant     API             as api
+control         Hub             as hub
+control         MailService     as mail
+queue           RabbitMQ        as rabbit
+participant     Worker          as worker
+
+user    -> api:     Long time request
+api     -> rabbit:  Add to queue
+api     -> user:    202 Accepted
+rabbit  -> worker:  New task
+worker  -> api:     Task done (webhook callback)
+api     -> hub:     Notify task done by SSE
+hub     -> user:    SSE : Task done
+api     -> mail:    Notify task done by email
+mail    -> user:    Mail : Task done
+
+@enduml

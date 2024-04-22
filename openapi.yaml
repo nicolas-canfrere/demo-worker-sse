@@ -1,0 +1,47 @@
+openapi: 3.0.0
+info:
+  title: 'Long Treatment API Demo'
+  description: 'This is an awesome app!'
+  version: 1.0.0
+paths:
+  /api/documents:
+    post:
+      tags:
+        - Document
+      operationId: post_process_document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessDocumentDto'
+      responses:
+        '202':
+          description: 'Document processing started'
+  /api/webhook/worker:
+    post:
+      tags:
+        - Webhooks
+      operationId: post_app_api_webhookworker__invoke
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                id:
+                  type: string
+              type: object
+      responses:
+        '202':
+          description: 'Document processed'
+components:
+  schemas:
+    ProcessDocumentDto:
+      required:
+        - id
+      properties:
+        id:
+          type: string
+      type: object
+
