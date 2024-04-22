@@ -6,7 +6,7 @@ GROUP_ID := $(shell id -g)
 USER:= --user $(USER_ID):$(GROUP_ID)
 
 NODE_VERSION := $(shell cat $(PWD)/.nvmrc | sed 's/^v//')
-RUN_CLI:= docker run $(USER) --rm -it \
+NODE_CLI:= docker run $(USER) --rm -it \
 	--env NPM_CONFIG_UPDATE_NOTIFIER=false \
 	--env NODE_OPTIONS=--openssl-legacy-provider \
 	--env npm_config_cache=/app/.npm \
@@ -39,10 +39,10 @@ install_php_packages:
 	$(COMPOSER_CLI) install
 
 install_npm_packages:
-	$(RUN_CLI) npm install
+	$(NODE_CLI) npm install
 
 npm_build:
-	$(RUN_CLI) npm run build
+	$(NODE_CLI) npm run build
 
 build: ## Build the project
 	$(MAKE) build_php
@@ -57,7 +57,7 @@ down: ## Stop the project
 	docker-compose down -v --remove-orphans
 
 npm_watch: ## watch js / css files changes
-	$(RUN_CLI) npm run watch
+	$(NODE_CLI) npm run watch
 
 logs_worker:
 	docker-compose logs -f archi_long_treatment_worker_app
