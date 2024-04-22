@@ -5,6 +5,8 @@
 
 ## Installation
 
+Clone the project then in root directory run:
+
 ```bash
 $ make build
 ```
